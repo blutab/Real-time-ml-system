@@ -1,6 +1,7 @@
-from pydantic import BaseModel, field_validator
 from datetime import datetime
-from typing import Optional
+
+from pydantic import BaseModel
+
 
 class Trade(BaseModel):
     """
@@ -14,6 +15,7 @@ class Trade(BaseModel):
     "trade_id": 4665906,
     "timestamp": "2023-09-25T07:49:37.708706Z"
     """
+
     pair: str
     price: float
     volume: float
@@ -26,7 +28,7 @@ class Trade(BaseModel):
     #     return int(values['timestamp'].timestamp() * 1000)
 
     def to_dict(self) -> dict:
-        #pydantic method to convert model to dict
+        # pydantic method to convert model to dict
         # return self.model_dump_json()
         # return {
         #     "pair": self.pair,
@@ -36,4 +38,3 @@ class Trade(BaseModel):
         #     "timestamp_ms": self.timestamp_ms
         # }
         return self.model_dump_json()
-    
