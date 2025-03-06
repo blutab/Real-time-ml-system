@@ -16,9 +16,9 @@ def main(
 
     Args:
         kafka_broker_address: str
-        kafka_topic: str
+        kafka_topic: str.
         kraken_api: Union[KrakenMockAPI, KrakenWebsocketAPI]
-        
+
     Returns:
         None
     """
