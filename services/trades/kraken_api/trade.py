@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from pydantic import BaseModel
 
 
@@ -19,7 +17,7 @@ class Trade(BaseModel):
     pair: str
     price: float
     volume: float
-    timestamp: datetime
+    timestamp: str
     timestamp_ms: int
 
     # TODO: let pydantic do the initialisation using timestamp
@@ -37,4 +35,4 @@ class Trade(BaseModel):
         #     "timestamp": self.timestamp,
         #     "timestamp_ms": self.timestamp_ms
         # }
-        return self.model_dump_json()
+        return self.model_dump()
