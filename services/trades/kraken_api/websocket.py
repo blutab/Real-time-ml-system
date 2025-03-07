@@ -31,7 +31,7 @@ class KrakenWebsocketAPI:
                     'params': {
                         'channel': 'trade',
                         'symbol': self.pairs,
-                        'snapshot': True,
+                        'snapshot': False,
                     },
                 }
             )
