@@ -55,6 +55,7 @@ def main(
     kafka_output_topic: str,
     kafka_consumer_group: str,
     candle_seconds: int,
+    emit_incomplete_candles: bool,
 ):
     """
     3 steps:
@@ -63,11 +64,12 @@ def main(
     3. Pushes candles to kafka
 
     Args:
-        kafka_broker_address: str
-        kafka_input_topic: str
-        kafka_output_topic: str
-        kafka_consumer_group: str
-        candle_seconds: int
+        kafka_broker_address (str): Kafka broker address
+        kafka_input_topic (str): Kafka input topic
+        kafka_output_topic (str): Kafka output topic
+        kafka_consumer_group (str): Kafka consumer group
+        candle_seconds (int): Candle seconds
+        emit_incomplete_candles (bool): Emit incomplete candles or just the final one
 
     Returns:
         None
@@ -99,11 +101,16 @@ def main(
     sdf = app.dataframe(topic=input_topic)
 
     # Aggregate trades into candles
-    sdf = (
-        sdf.tumbling_window(timedelta(seconds=candle_seconds))
-        .reduce(reducer=update_candle, initializer=init_candle)
-        .current()
+    sdf = sdf.tumbling_window(timedelta(seconds=candle_seconds)).reduce(
+        reducer=update_candle, initializer=init_candle
     )
+
+    if emit_incomplete_candles:
+        # Emit all intermediate candles to make the system more reactive
+        sdf = sdf.current()
+    else:
+        # Emit only the final candle
+        sdf = sdf.final()
 
     # extract open, high, low, close, volumne, timestamp_ms, pair from the dataframe
     sdf['open'] = sdf['value']['open']
@@ -152,4 +159,5 @@ if __name__ == '__main__':
         kafka_output_topic=config.kafka_output_topic,
         kafka_consumer_group=config.kafka_consumer_group,
         candle_seconds=config.candle_seconds,
+        emit_incomplete_candles=config.emit_incomplete_candles,
     )
