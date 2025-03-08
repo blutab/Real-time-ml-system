@@ -31,6 +31,8 @@ def init_candle(trade: dict) -> dict:
         'low': trade['price'],
         'close': trade['price'],
         'volume': trade['volume'],
+        'timestamp_ms': trade['timestamp_ms'],
+        'pair': trade['pair'],
     }
 
 
@@ -42,6 +44,8 @@ def update_candle(candle: dict, trade: dict) -> dict:
     candle['high'] = max(candle['high'], trade['price'])
     candle['low'] = min(candle['low'], trade['price'])
     candle['volume'] += trade['volume']
+    candle['timestamp_ms'] = trade['timestamp_ms']
+    candle['pair'] = trade['pair']
     return candle
 
 
@@ -93,23 +97,44 @@ def main(
 
     # create a streaming dataframe
     sdf = app.dataframe(topic=input_topic)
-    # sdf = sdf.apply(lambda value: logger.info(f"Recieved trade: {value}"))
 
-    # # define the tumbling window
-    # sdf = sdf.tumbling_window(timedelta(seconds=candle_seconds))
-
-    # # Apply the reducer to update the candle or initilise it with the first trade
-    # sdf = sdf.reduce(reducer=update_candle, initializer=init_candle)
-
-    # # Emit all intermediate candles to make the system more reactive
-    # sdf = sdf.current()
-
-    # NOTE: you can pipe these operations together like in this example
+    # Aggregate trades into candles
     sdf = (
         sdf.tumbling_window(timedelta(seconds=candle_seconds))
         .reduce(reducer=update_candle, initializer=init_candle)
         .current()
     )
+
+    # extract open, high, low, close, volumne, timestamp_ms, pair from the dataframe
+    sdf['open'] = sdf['value']['open']
+    sdf['high'] = sdf['value']['high']
+    sdf['low'] = sdf['value']['low']
+    sdf['close'] = sdf['value']['close']
+    sdf['volume'] = sdf['value']['volume']
+    sdf['timestamp_ms'] = sdf['value']['timestamp_ms']
+    sdf['pair'] = sdf['value']['pair']
+
+    # Extract window start and end
+    sdf['window_start_ms'] = sdf['start']
+    sdf['window_end_ms'] = sdf['end']
+
+    # keep only the required columns
+    sdf = sdf[
+        [
+            'pair',
+            'timestamp_ms',
+            'open',
+            'high',
+            'low',
+            'close',
+            'volume',
+            'window_start_ms',
+            'window_end_ms',
+        ]
+    ]
+
+    sdf = sdf.update(lambda value: logger.info(f'Candle: {value}'))
+    # sdf = sdf.update(lambda value: breakpoint())
 
     # push the candles to output_topic
     sdf.to_topic(topic=output_topic)
