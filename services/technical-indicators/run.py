@@ -10,6 +10,7 @@ def main(
     kafka_input_topic: str,
     kafka_output_topic: str,
     max_candles_in_state: int,
+    candle_seconds: int,
 ):
     """
     3 steps:
@@ -23,7 +24,7 @@ def main(
         kafka_input_topic (str): The topic to ingest the candles from
         kafka_output_topic (str): The topic to send the technical indicators to
         max_candles_in_state (int): The number of candles to keep in the state
-
+        candle_seconds (int): The number of seconds in each candle
     Returns:
         None
     """
@@ -41,6 +42,9 @@ def main(
 
     # Creating a treaming dataframe sp we can start transofrming data in real life
     sdf = app.dataframe(topic=input_topic)
+
+    # We only keep the candles with the same window size as the candle_seconds
+    sdf = sdf[sdf['candle_seconds'] == candle_seconds]
 
     # Update the list of candles in the state
     sdf = sdf.apply(update_candles, stateful=True)
@@ -65,4 +69,5 @@ if __name__ == '__main__':
         kafka_input_topic=config.kafka_input_topic,
         kafka_output_topic=config.kafka_output_topic,
         max_candles_in_state=config.max_candles_in_state,
+        candle_seconds=config.candle_seconds,
     )
